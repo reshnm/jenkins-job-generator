@@ -1,2 +1,52 @@
-- job:
-    name: generator-test-job
+- project:
+    name: snapshot-builds
+    major:
+        - 11
+        - 12
+        - 13
+    jobs:
+        - docker-builds
+        - non-docker-builds
+
+- job-group:
+    name: docker-builds
+    docker-pre: |
+        docker {{
+            image 'ubuntu:18.04'
+            reuseNode true
+    docker-post: |
+        }}
+    platform:
+        - linux_x86_64
+        - linux_ppc64le
+    jobs:
+        - build-{major}-snapshot-{platform}-generatortest
+
+- job-group:
+    name: non-docker-builds
+    docker-pre: ''
+    docker-post: ''
+    platform:
+        - macos_x86_64
+    jobs:
+        - build-{major}-snapshot-{platform}-generatortest
+
+- job-template:
+    name: build-{major}-snapshot-{platform}-generatortest
+    description: 'This project is generated. Do not modify manually.'
+    project-type: pipeline
+    dsl: |
+        pipeline {{
+            agent {{
+                {docker-pre}
+                label "{platform}"
+                {docker-post}
+            }}
+            stages {{
+                stage("Build") {{
+                    steps {{
+                        sh "echo building {major} on {platform}"
+                    }}
+                }}
+            }}
+        }}
